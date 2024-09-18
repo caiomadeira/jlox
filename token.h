@@ -24,6 +24,8 @@ typedef enum {
     GREATER_EQUAL,
     LESS,
     LESS_EQUAL,
+    EQUAL_EQUAL,
+    EQUAL,
     
     // Literals
     IDENTIFIER, STRING, NUMBER,

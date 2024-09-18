@@ -6,6 +6,7 @@ https://gist.github.com/bojanrajkovic/831993
 #pragma once // Protege os arquivos de multiplos imports
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 
 //verificar depois
 //typedef unsigned char Byte;

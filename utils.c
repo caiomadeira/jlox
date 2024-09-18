@@ -44,3 +44,18 @@ void * convert_t(void * input, PrimitiveData type)
     }
     return output;
 }
+
+/*
+FUncao para criar uma substring de source entre start (inclusivo) e end (exclusivo)
+*/
+char* substring(const char* source, int start, int end)
+{
+    if (start < 0 || end > strlen(source) || start > end)
+        return NULL;
+    // tamanho da nova substring
+    int len = end - start;
+    char * result = allocstr(len);
+    strncpy(result, source + start, len);
+    result[len] = '\0';
+    return result;
+}
