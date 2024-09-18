@@ -3,6 +3,7 @@
 https://gist.github.com/bojanrajkovic/831993
 
 */
+#pragma once // Protege os arquivos de multiplos imports
 #include<stdio.h>
 #include<stdlib.h>
 
@@ -19,6 +20,7 @@ https://gist.github.com/bojanrajkovic/831993
 #define U_TRUE 1
 #define U_FALSE 0
 
+
 typedef enum {
     INT_T, FLOAT_T, CHAR_T,
 } PrimitiveData;
@@ -27,7 +29,6 @@ typedef struct {
     void * data;
     char type;
 } Object;
-
 
 FILE * openf(const char * filename, const char* mode);
 char * allocstr(int n);

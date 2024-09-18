@@ -22,7 +22,7 @@ Token * newtoken(token_t type, char* lexeme, int lexeme_n, Object * literal, int
 
 char * tostr_token(Token * tk) {
     char * buffer = allocstr(200);
-    strcat(buffer, tk->type);
+    // strcat(buffer, tk->type); // error: incompatible type for argument 2 of ‘strcat’
     strcat(buffer, " ");
     strcat(buffer, tk->lexeme);
     strcat(buffer, " ");

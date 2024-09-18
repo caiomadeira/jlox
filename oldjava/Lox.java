@@ -1,3 +1,4 @@
+package oldjava;
 /*
 
 https://gist.github.com/bojanrajkovic/831993

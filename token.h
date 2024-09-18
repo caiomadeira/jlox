@@ -1,6 +1,7 @@
-#include<stdlib.h>
-#include<stdio.h>
+#pragma once
 #include "utils.h"
+
+#define TEMP_MAX_VTOKENS 500 /* max vtokens (temporario) */
 
 typedef enum {
     // Single-character tokens
@@ -30,17 +31,18 @@ typedef enum {
     // Keywords
     AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,
     PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
-    ENDOFFILE
+    ENDOFFILE,
+
+    // defaults
+    NONE
 }token_t; 
 
-struct token {
+typedef struct {
     token_t type;
     char* lexeme;
     Object * literal;
     int line;
-};
-
-typedef struct token Token;
+} Token;
 
 Token * newtoken(token_t type, char* lexeme, int lexeme_n, Object *literal, int line);
 char * tostr_token(Token * tk);

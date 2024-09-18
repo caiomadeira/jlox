@@ -1,3 +1,4 @@
+package oldjava;
 public class Token {
     final TokenType type;
     final String lexeme; // Caixinha com os caracteres quando separados

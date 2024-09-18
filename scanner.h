@@ -1,5 +1,4 @@
-#include<stdio.h>
-#include<stdlib.h>
+#pragma once
 #include "token.h"
 
 #define SCANNER_START 0
@@ -23,3 +22,4 @@ int isatend(int current, int source_n);
 Scanner * newscanner(char * source, int source_n);
 Token ** scantokens(Scanner * s, int source_n, int tokens_n);
 Token ** allocvtokens(int tokens_n);
+void printtokensv(Token** vtoken, int tokens_n);

@@ -1,3 +1,4 @@
+package oldjava;
 public enum TokenType {
 
     // Single-character tokens

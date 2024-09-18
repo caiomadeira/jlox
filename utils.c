@@ -19,24 +19,28 @@ void * convert_t(void * input, PrimitiveData type)
     void * output = NULL;
     switch (type)
     {
-    case INT_T:
+    case INT_T: {
         int * buffer = (int*)malloc(sizeof(int));
+        *buffer = *(int*)input;
         output = buffer;
         break;
+    }
 
-    case CHAR_T:
-        int * buffer = (char*)malloc(sizeof(char));
+    case CHAR_T: {
+        char * buffer = (char*)malloc(sizeof(char));
+        *buffer = *(char*)input;
         output = buffer;
         break;
-
-    case FLOAT_T:
-        int * buffer = (float*)malloc(sizeof(float));
+    }
+    case FLOAT_T: {
+        float * buffer = (float*)malloc(sizeof(float));
+        *buffer = *(float*)input;
         output = buffer;
         break;
+    }
     
     default:
         break;
     }
-
     return output;
 }

@@ -2,7 +2,28 @@
 #include "scanner.h"
 #include "token.h"
 
-static void runfile(const char * path) {
+static void run(char * source, int source_n)
+{
+    Scanner * s = newscanner(source, source_n);
+    Token ** vtk = scantokens(s, source_n, TEMP_MAX_VTOKENS);
+    printtokensv(vtk, TEMP_MAX_VTOKENS);
+}
+
+static void runprompt(int * hadError)
+{
+    char * buffer = allocstr(1000);
+    int input = scanf("%s", buffer);
+    for(;;)
+    {
+        printf("> ");
+        if (buffer == NULL) break;
+        run(buffer, 1000);
+        int false = FALSE;
+        hadError = &false;
+    }
+}
+
+static void runfile(const char * path, int * hadError) {
     FILE * f = fopen(path, "rb");
     // 0L -> deslocamento offset = 0. Queremos ir ate oi final do arquivo
     // Move o ponteiro ate o final do arquivo depois volta
@@ -17,23 +38,32 @@ static void runfile(const char * path) {
     buffer[fsize] = NULL_TERMINATOR;
 
     fclose(f);
-    run(buffer);
+    run(buffer, fsize);
     free(buffer);
+    if (hadError == TRUE) { exit(65); } // Ver se ta ok posteriormente
 }
 
-static void run(char * source, int source_n)
+static void report(int line, const char* where, const char* msg, int * hadError)
 {
-    Scanner * s = newscanner(source, source_n);
-    Token ** vtk = scantokens(s, source_n, MAX)
+    printf("[line %d] Error %s: %s\n", line, where, msg);
+    int true = TRUE;
+    hadError = &true;
 }
+
+static void error(int line, const char * msg, int * hadError)
+{ report(line, "", msg, hadError); }
 
 int main(int argc, char * argv[])
 {
+    int false = FALSE;
+    int * hadError;
+    hadError = &false;
+
     if (argc > 1)
-    { printf("Usage: cmarte [script]"); exit(EX_USAGE); } 
+    { printf("Usage: cmarte [script]\n"); exit(EX_USAGE); } 
 
-    else if (argc == 1) { runfile(argv[0]); }
+    else if (argc == 1) { runfile(argv[0], hadError); }
 
-    else { runprompt(); }
+    else { runprompt(hadError); }
     return 0;
 }
