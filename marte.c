@@ -5,8 +5,9 @@
 static void run(char * source, int source_n)
 {
     Scanner * s = newscanner(source, source_n);
-    Token ** vtk = scantokens(s, source_n, TEMP_MAX_VTOKENS);
-    printtokensv(vtk, TEMP_MAX_VTOKENS);
+    Token * vtk = scantokens(s, source_n, BASE_TOKENS_QTD);
+    //printtokensv(vtk, BASE_TOKENS_QTD);
+    print_token(vtk);
 }
 
 static void runprompt(int * hadError)
@@ -40,7 +41,7 @@ static void runfile(const char * path, int * hadError) {
     fclose(f);
     run(buffer, fsize);
     free(buffer);
-    if (hadError == TRUE) { exit(65); } // Ver se ta ok posteriormente
+    if (*(hadError) == TRUE) { exit(65); } // Ver se ta ok posteriormente
 }
 
 static void report(int line, const char* where, const char* msg, int * hadError)

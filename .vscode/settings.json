@@ -2,6 +2,7 @@
     "files.associations": {
         "token.h": "c",
         "scanner.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "utils.h": "c"
     }
 }

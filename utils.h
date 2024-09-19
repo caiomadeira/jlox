@@ -34,3 +34,4 @@ typedef struct {
 FILE * openf(const char * filename, const char* mode);
 char * allocstr(int n);
 void * convert_t(void * input, PrimitiveData type);
+char* substring(const char* source, int start, int end);

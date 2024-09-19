@@ -2,6 +2,7 @@
 #include "utils.h"
 
 #define TEMP_MAX_VTOKENS 500 /* max vtokens (temporario) */
+#define BASE_TOKENS_QTD 5000
 
 typedef enum {
     // Single-character tokens
@@ -39,12 +40,25 @@ typedef enum {
     NONE
 }token_t; 
 
-typedef struct {
+struct token {
     token_t type;
     char* lexeme;
     Object * literal;
     int line;
-} Token;
+    struct token * next;
+};
+typedef struct token Token;
+
+struct tokens_v {
+    struct token * list[BASE_TOKENS_QTD];
+};
+
+typedef struct tokens_v TokensV;
 
 Token * newtoken(token_t type, char* lexeme, int lexeme_n, Object *literal, int line);
 char * tostr_token(Token * tk);
+TokensV * init_tokens_array(void);
+Token * pushf(Token * newtk, Token * stack);
+void print_tokensv(TokensV * v);
+void print_token(Token * stack);
+int tokenscount(void);

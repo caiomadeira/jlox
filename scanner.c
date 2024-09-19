@@ -2,13 +2,17 @@
 #include "token.h"
 #include "utils.h"
 
+Token* stack = NULL;
+
+
 Scanner *newscanner(char *source, int source_n)
 {
     Scanner *scanner = (Scanner *)malloc(sizeof(Scanner));
     if (scanner != NULL)
     {
         scanner->source = allocstr(source_n);
-        scanner->vtokens = allocvtokens(TEMP_MAX_VTOKENS);
+        //scanner->vtokens = allocvtokens(TEMP_MAX_VTOKENS);
+        scanner->linkedtokens = NULL;
         scanner->start = SCANNER_START;
         scanner->current = 0;
         scanner->line = 1;
@@ -46,7 +50,7 @@ void printtokensv(Token **vtoken, int tokens_n)
         printf("[%d] - lexeme(%s) - line(%d)\n", i, vtoken[i]->lexeme, vtoken[i]->line);
 }
 
-Token **scantokens(Scanner *s, int source_n, int tokens_n)
+Token* scantokens(Scanner *s, int source_n, int tokens_n)
 {
     //while(isatend(s->current, source_n) != 1)
     while (s->current >= source_n)
@@ -55,11 +59,16 @@ Token **scantokens(Scanner *s, int source_n, int tokens_n)
         scantokens(s, source_n, tokens_n);
     };
 
-    s->vtokens[tokens_n] = newtoken(ENDOFFILE, NULL, 0, NULL, s->line);
-    return s->vtokens;
+    //s->vtokens[tokens_n] = newtoken(ENDOFFILE, NULL, 0, NULL, s->line);
+    Token * newtk = newtoken(ENDOFFILE, NULL, 0, NULL, s->line);
+    stack = pushf(newtk, stack);
+    s->linkedtokens = stack;
+    return s->linkedtokens;
 }
 
-Token **allocvtokens(int tokens_n)
+// TODO: Mover para tokens.c
+/*
+Token** allocvtokens(int tokens_n)
 {
     Token **v = (Token **)malloc(tokens_n * sizeof(Token *));
     if (v != NULL)
@@ -73,18 +82,14 @@ Token **allocvtokens(int tokens_n)
                 v[i]->line = 1;
                 v[i]->type = NONE;
             }
-            else
-            {
-                exit(EX_MEMALLOC);
-            }
+            else { exit(EX_MEMALLOC);}
         }
     }
     else
-    {
-        exit(EX_MEMALLOC);
-    }
+    { exit(EX_MEMALLOC);}
     return v;
 }
+*/
 
 int peek(Scanner * s, char * source)
 {
@@ -98,7 +103,7 @@ void string(Scanner * s, char * source)
     {
         if (peek(s, source) == '\n')
             s->line++;
-        nextchar(s, source);
+        advance(s, source);
     }
 
     if (isAtEnd2(s, source)) 
@@ -107,7 +112,7 @@ void string(Scanner * s, char * source)
         return;
     }
 
-    nextchar(s, source);
+    advance(s, source);
     char * value = substring(source, s->start + 1, s->current - 1);
     addtoken(s, value, STRING);
 }
@@ -125,15 +130,15 @@ char peekNext(Scanner * s, char * source)
 
 void number(Scanner * s, char * source)
 {
-    while(isDigit(peek(s, source))) nextchar(s, source);
+    while(isDigit(peek(s, source))) advance(s, source);
 
     if (peek(s, source) == '.' && isDigit(peekNext(s, source))) {
-        nextchar(s, source);
+        advance(s, source);
 
-        while(isDigit(peek(s, source))) nextchar(s, source);
+        while(isDigit(peek(s, source))) advance(s, source);
     }
 
-    char * value = substring(s->start, s->current);
+    char * value = substring(source, s->start, s->current);
     /*
 
     Corrigir depois para algo equivalente a:
@@ -145,9 +150,29 @@ void number(Scanner * s, char * source)
     addtoken(s, value, NUMBER); 
 }
 
-void scantoken(Scanner *s, char *source)
+int isAlpha(char c) {
+
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
+        return U_TRUE;
+    return U_FALSE;
+}
+
+int isAlphaNUmeric(char c)
 {
-    char c = nextchar(s, source);
+    if (isAlpha(c) || isDigit(c))
+        return U_TRUE;
+    return U_FALSE;
+}
+
+void identifier(Scanner * s, char * source) {
+    while(isAlphaNUmeric(peek(s, source)))
+        advance(s, source);
+    addToken(IDENTIFIER);
+}
+
+void scantoken(Scanner *s, char *source, Token* stack)
+{
+    char c = advance(s, source);
     switch (c)
     {
     case '(':
@@ -181,20 +206,20 @@ void scantoken(Scanner *s, char *source)
         addtoken(s, source, STAR);
         break;
       case '!':
-        addtoken(s, source, match('=') ? BANG_EQUAL : BANG);
+        addtoken(s, source, match(s, strlen(source), '=') ? BANG_EQUAL : BANG);
         break;
       case '=':
-        addtoken(s, source, match('=') ? EQUAL_EQUAL : EQUAL);
+        addtoken(s, source, match(s, strlen(source),'=') ? EQUAL_EQUAL : EQUAL);
         break;
       case '<':
-        addtoken(s, source, match('=') ? LESS_EQUAL : LESS);
+        addtoken(s, source, match(s, strlen(source),'=') ? LESS_EQUAL : LESS);
         break;
       case '>':
-        addtoken(s, source, match('=') ? GREATER_EQUAL : GREATER);
+        addtoken(s, source, match(s, strlen(source),'=') ? GREATER_EQUAL : GREATER);
         break;
      case '/':
-        if (match(s, source, '/'))
-        { while(peek(s, source) == '\n' && !isAtEnd2(s, source)) nextchar(s, source);
+        if (match(s, strlen(source), '/'))
+        { while(peek(s, source) == '\n' && !isAtEnd2(s, source)) advance(s, source);
         } else { addtoken(s, source, SLASH); }
         break;
 
@@ -210,7 +235,7 @@ void scantoken(Scanner *s, char *source)
 
       case '"': string(s, source); break;
       case 'o':
-        if (match(s, source, 'r')) {
+        if (match(s, strlen(source), 'r')) {
             addtoken(s, source, OR);
         }
         break;
@@ -219,7 +244,11 @@ void scantoken(Scanner *s, char *source)
         if (isDigit(c))
         {
             number(s, source);
-        } else {
+        } else if (isAlpha(c))
+        {
+            identifier();
+        } 
+        else {
             printf("Unexpected character at line %d.\n", s->line);
         }
         break;
@@ -232,7 +261,7 @@ Acessa o caractere na posição atual do current e
 em seguida incrementa o currence. Ele avança no fluxo de entrada (source)
 nextchar == advance
 */
-char nextchar(Scanner *s, char *source)
+char advance(Scanner *s, char *source)
 {
     return source[s->current++];
 }
@@ -247,20 +276,9 @@ void addtokenwliteral(Scanner *s, char *source, token_t type, Object *literal)
 {
     char *txt = substring(source, s->start, s->current);
     Token *newtk = newtoken(type, txt, strlen(txt), literal, s->line);
-    s->vtokens[TEMP_MAX_VTOKENS] = newtoken(ENDOFFILE, NULL, 0, NULL, s->line);
+    stack = pushf(newtk, stack);
+    s->linkedtokens = stack;
 }
-
-/*
-
-  private boolean match(char expected) {
-    if (isAtEnd()) return false;
-    if (source.charAt(current) != expected) return false;
-
-    current++;
-    return true;
-  }
-
-*/
 
 int match(Scanner * s, int source_n, char expected) 
 {
