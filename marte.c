@@ -1,13 +1,12 @@
 #include "utils.h"
-#include "scanner.h"
-#include "token.h"
+
+static int hadError = U_FALSE;
 
 static void run(char * source, int source_n)
 {
-    Scanner * s = newscanner(source, source_n);
-    Token * vtk = scantokens(s, source_n, BASE_TOKENS_QTD);
-    //printtokensv(vtk, BASE_TOKENS_QTD);
-    print_token(vtk);
+    //Scanner * s = newscanner(source, source_n);
+    //Token * vtk = scantokens(s, source_n, BASE_TOKENS_QTD);
+    //print_token(vtk);
 }
 
 static void runprompt(int * hadError)
@@ -19,7 +18,7 @@ static void runprompt(int * hadError)
         printf("> ");
         if (buffer == NULL) break;
         run(buffer, 1000);
-        int false = FALSE;
+        int false = U_FALSE;
         hadError = &false;
     }
 }
@@ -41,13 +40,13 @@ static void runfile(const char * path, int * hadError) {
     fclose(f);
     run(buffer, fsize);
     free(buffer);
-    if (*(hadError) == TRUE) { exit(65); } // Ver se ta ok posteriormente
+    if (*(hadError) == U_TRUE) { exit(65); } // Ver se ta ok posteriormente
 }
 
 static void report(int line, const char* where, const char* msg, int * hadError)
 {
     printf("[line %d] Error %s: %s\n", line, where, msg);
-    int true = TRUE;
+    int true = U_TRUE;
     hadError = &true;
 }
 
@@ -56,7 +55,7 @@ static void error(int line, const char * msg, int * hadError)
 
 int main(int argc, char * argv[])
 {
-    int false = FALSE;
+    int false = U_FALSE;
     int * hadError;
     hadError = &false;
 
