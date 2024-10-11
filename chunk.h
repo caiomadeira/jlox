@@ -17,8 +17,10 @@ IN our bytecode format, each instruction has a one-byte operation code
 */
 typedef enum {
     OP_CONSTANT,
+    OP_CONSTANT_LONG,
     OP_RETURN, // Return for the current function
 } opcode;
+
 
 
 // Dynamic array of instructions
@@ -30,11 +32,20 @@ Dynamic arrays is:
     - Cache-friendly, dense storage;
     - O(1) indexed element lookup; O(1) appending to the end of the array;
 */
+
+typedef struct {
+    int offset;
+    int line;
+} LineStart;
+
 typedef struct {
     int count; // how many of those allocated entries are actually in use
     int capacity; // Number of elements in the array we have allocated
     uint8_t* code;
-    int* lines; // this separted array is for lines numbers when a error occurs in runtime
+    //int* lines; // this separted array is for lines numbers when a error occurs in runtime
+    int lineCount;
+    int lineCapacity;
+    LineStart *lines;
     ValueArray constants; // Store chunk's constantes
 } Chunk;
 
@@ -44,5 +55,7 @@ void initChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, uint8_t byte, int line);
 int addConstant(Chunk* chunk, Value value);
 void freeChunk(Chunk* chunk);
+int getLine(Chunk* chunk, int instruction); // aux func
+void writeConstant(Chunk* chunk, Value value, int line);
 
 #endif
