@@ -16,12 +16,15 @@ IN our bytecode format, each instruction has a one-byte operation code
  subtract, look up variable, etc. We define those here.
 */
 typedef enum {
-    OP_CONSTANT,
     OP_CONSTANT_LONG,
+    OP_CONSTANT,
+    OP_ADD,
+    OP_SUBTRACT,
+    OP_MULTIPLY,
+    OP_DIVIDE,
+    OP_NEGATE,
     OP_RETURN, // Return for the current function
 } opcode;
-
-
 
 // Dynamic array of instructions
 /*
