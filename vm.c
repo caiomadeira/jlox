@@ -3,6 +3,7 @@
 #include "common.h"
 #include "debug.h"
 #include "vm.h"
+#include "value.h"
 
 /*
 We declare a single global VM object
@@ -80,10 +81,11 @@ static InterpretResult run()
 #endif
         uint8_t instruction;
         switch (instruction = READ_BYTE()) {
-            case OP_CONSTANT:
+            case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
                 push(constant);
                 break;
+            }
             case OP_ADD:    BINARY_OP(+); break;
             case OP_MULTIPLY: BINARY_OP(*); break;
             case OP_DIVIDE:   BINARY_OP(/); break;
@@ -97,6 +99,7 @@ static InterpretResult run()
     }
     #undef READ_BYTE
     #undef READ_CONSTANT
+    #undef BINARY_OP
 }
 
 InterpretResult interpret(Chunk* chunk)
