@@ -1,290 +1,217 @@
+#include <stdio.h>
+#include <string.h>
+
+#include "common.h"
 #include "scanner.h"
-#include "token.h"
-#include "utils.h"
 
-Token* stack = NULL;
+typedef struct {
+    const char* start;
+    const char* current;
+    int line;
+} Scanner;
 
+Scanner scanner;
 
-Scanner *newscanner(char *source, int source_n)
-{
-    Scanner *scanner = (Scanner *)malloc(sizeof(Scanner));
-    if (scanner != NULL)
-    {
-        scanner->source = allocstr(source_n);
-        //scanner->vtokens = allocvtokens(TEMP_MAX_VTOKENS);
-        scanner->linkedtokens = NULL;
-        scanner->start = SCANNER_START;
-        scanner->current = 0;
-        scanner->line = 1;
-        return scanner;
-    }
-    exit(EX_MEMALLOC);
+void initScanner(const char* source) {
+    scanner.start = source;
+    scanner.current = source;
+    scanner.line = 1;
 }
 
-/*
-int isatend(int current, int source_n)
-{
-    if (current >= source_n)
-        return U_TRUE;
-    else
-        return U_FALSE;
+static bool isAlpha(char c) {
+    return (c >= 'a' && c <= 'z') ||
+        (c >= 'A' && c <= 'Z') ||
+        c == '_';
 }
 
-is at end 2
-
-int isAtEnd2() {
-    return source[current] == '\0';
-}
-
-*/
-
-int isAtEnd2(Scanner *s, char * source) 
-{
-    return source[s->current] == NULL_TERMINATOR;
-}
-
-void printtokensv(Token **vtoken, int tokens_n)
-{
-    printf("Print tokens:\n");
-    for (int i = 0; i < tokens_n; i++)
-        printf("[%d] - lexeme(%s) - line(%d)\n", i, vtoken[i]->lexeme, vtoken[i]->line);
-}
-
-Token* scantokens(Scanner *s, int source_n, int tokens_n)
-{
-    //while(isatend(s->current, source_n) != 1)
-    while (s->current >= source_n)
-    {
-        s->start = s->current;
-        scantokens(s, source_n, tokens_n);
-    };
-
-    //s->vtokens[tokens_n] = newtoken(ENDOFFILE, NULL, 0, NULL, s->line);
-    Token * newtk = newtoken(ENDOFFILE, NULL, 0, NULL, s->line);
-    stack = pushf(newtk, stack);
-    s->linkedtokens = stack;
-    return s->linkedtokens;
-}
-
-// TODO: Mover para tokens.c
-/*
-Token** allocvtokens(int tokens_n)
-{
-    Token **v = (Token **)malloc(tokens_n * sizeof(Token *));
-    if (v != NULL)
-    {
-        for (int i = 0; i < tokens_n; i++)
-        {
-            v[i] = (Token *)malloc(sizeof(Token));
-            if (v[i] != NULL)
-            {
-                v[i]->lexeme = NULL;
-                v[i]->line = 1;
-                v[i]->type = NONE;
-            }
-            else { exit(EX_MEMALLOC);}
-        }
-    }
-    else
-    { exit(EX_MEMALLOC);}
-    return v;
-}
-*/
-
-int peek(Scanner * s, char * source)
-{
-    if (isAtEnd2(s, source)) return '\0';
-    return source[s->current];
-}
-
-void string(Scanner * s, char * source)
-{
-    while(peek(s, source) != '"' && !isAtEnd2(s, source))
-    {
-        if (peek(s, source) == '\n')
-            s->line++;
-        advance(s, source);
-    }
-
-    if (isAtEnd2(s, source)) 
-    {
-        printf("Unterminated string at %d.\n", s->line);
-        return;
-    }
-
-    advance(s, source);
-    char * value = substring(source, s->start + 1, s->current - 1);
-    addtoken(s, value, STRING);
-}
-
-int isDigit(char c)
-{
+static bool isDigit(char c) {
     return c >= '0' && c <= '9';
 }
 
-char peekNext(Scanner * s, char * source)
-{
-    if (s->current + 1 >= strlen(source)) return NULL_TERMINATOR;
-    return source[s->current + 1];
+static bool isAtEnd() {
+    return *scanner.current == '\0';
 }
 
-void number(Scanner * s, char * source)
+static char advance()
 {
-    while(isDigit(peek(s, source))) advance(s, source);
+    scanner.current++;
+    return scanner.current[-1];
+}
 
-    if (peek(s, source) == '.' && isDigit(peekNext(s, source))) {
-        advance(s, source);
+static char peek() { return *scanner.current; }
 
-        while(isDigit(peek(s, source))) advance(s, source);
+static char peekNext()
+{
+    if (isAtEnd()) return '\0';
+    return scanner.current[1];
+}
+
+static bool match(char expected) {
+    if (isAtEnd()) return false;
+    if (*scanner.current != expected) return false;
+    scanner.current++;
+    return true;
+}
+
+static void skipWhitespace() {
+    for(;;) {
+        char c = peek();
+        switch(c) {
+            case ' ':
+            case '\r':
+            case '\t':
+                advance();
+                break;
+            case '\n':
+                scanner.line++;
+                advance();
+                break;
+            case '/':
+                if (peekNext() == '/')
+                    while (peek() != '\n' && !isAtEnd()) advance();  // A comment goes until the end of the line.
+                else { return; }
+                break;
+            default:
+                return;
+        }
     }
-
-    char * value = substring(source, s->start, s->current);
-    /*
-
-    Corrigir depois para algo equivalente a:
-
-        addToken(NUMBER,
-        Double.parseDouble(source.substring(start, current)));
-    */
-    //addtoken(s, strtod(value), NUMBER);
-    addtoken(s, value, NUMBER); 
 }
 
-int isAlpha(char c) {
-
-    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
-        return U_TRUE;
-    return U_FALSE;
-}
-
-int isAlphaNUmeric(char c)
+static Token makeToken(TokenType type)
 {
-    if (isAlpha(c) || isDigit(c))
-        return U_TRUE;
-    return U_FALSE;
+    Token token;
+    token.type = type;
+    token.start = scanner.start;
+    token.length = (int) (scanner.current - scanner.start);
+    token.line = scanner.line;
+    return token;
 }
 
-void identifier(Scanner * s, char * source) {
-    while(isAlphaNUmeric(peek(s, source)))
-        advance(s, source);
-    addToken(IDENTIFIER);
-}
-
-void scantoken(Scanner *s, char *source, Token* stack)
+static Token errorToken(const char* message)
 {
-    char c = advance(s, source);
-    switch (c)
+    Token token;
+    token.type = TOKEN_ERROR;
+    token.start = message;
+    token.length = (int)strlen(message);
+    token.line = scanner.line;
+    return token;
+}
+
+static TokenType checkKeyword(int start, int length, const char* rest, TokenType type)
+{
+    if (scanner.current - scanner.start == start + length && memcmp(scanner.start + start, rest, length) == 0) 
+        return type;
+
+    return TOKEN_IDENTIFIER;
+}
+
+static TokenType identifierType() {
+  switch (scanner.start[0]) {
+    case 'a': return checkKeyword(1, 2, "nd", TOKEN_AND);
+    case 'c': return checkKeyword(1, 4, "lass", TOKEN_CLASS);
+    case 'e': return checkKeyword(1, 3, "lse", TOKEN_ELSE);
+    case 'f':
+        if (scanner.current - scanner.start > 1) {
+            switch (scanner.start[1]) {
+            case 'a': return checkKeyword(2, 3, "lse", TOKEN_FALSE);
+            case 'o': return checkKeyword(2, 1, "r", TOKEN_FOR);
+            case 'u': return checkKeyword(2, 1, "n", TOKEN_FUN);
+            }
+        }
+        break;
+    case 't':
+        if (scanner.current - scanner.start > 1) {
+            switch (scanner.start[1]) {
+            case 'h': return checkKeyword(2, 2, "is", TOKEN_THIS);
+            case 'r': return checkKeyword(2, 2, "ue", TOKEN_TRUE);
+            }
+        }
+        break;
+    case 'i': return checkKeyword(1, 1, "f", TOKEN_IF);
+    case 'n': return checkKeyword(1, 2, "il", TOKEN_NIL);
+    case 'o': return checkKeyword(1, 1, "r", TOKEN_OR);
+    case 'p': return checkKeyword(1, 4, "rint", TOKEN_PRINT);
+    case 'r': return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
+    case 's': return checkKeyword(1, 4, "uper", TOKEN_SUPER);
+    case 'v': return checkKeyword(1, 2, "ar", TOKEN_VAR);
+    case 'w': return checkKeyword(1, 4, "hile", TOKEN_WHILE);
+  }
+    return TOKEN_IDENTIFIER;
+}
+
+static Token identifier() {
+    while (isAlpha(peek()) || isDigit(peek())) advance();
+    return makeToken(identifierType());
+}
+
+static Token number() {
+    while(isDigit(peek())) advance();
+
+    // Olha a parte fracional
+    if (peek() == '.' && isDigit(peekNext())) 
     {
-    case '(':
-        addtoken(s, source, LEFT_PAREN);
-        break;
-    case ')':
-        addtoken(s, source, RIGHT_PAREN);
-        break;
-    case '{':
-        addtoken(s, source, LEFT_BRACE);
-        break;
-    case '}':
-        addtoken(s, source, RIGHT_BRACE);
-        break;
-    case ',':
-        addtoken(s, source, COMMA);
-        break;
-    case '.':
-        addtoken(s, source, DOT);
-        break;
-    case '-':
-        addtoken(s, source, MINUS);
-        break;
-    case '+':
-        addtoken(s, source, PLUS);
-        break;
-    case ';':
-        addtoken(s, source, SEMICOLON);
-        break;
-    case '*':
-        addtoken(s, source, STAR);
-        break;
-      case '!':
-        addtoken(s, source, match(s, strlen(source), '=') ? BANG_EQUAL : BANG);
-        break;
-      case '=':
-        addtoken(s, source, match(s, strlen(source),'=') ? EQUAL_EQUAL : EQUAL);
-        break;
-      case '<':
-        addtoken(s, source, match(s, strlen(source),'=') ? LESS_EQUAL : LESS);
-        break;
-      case '>':
-        addtoken(s, source, match(s, strlen(source),'=') ? GREATER_EQUAL : GREATER);
-        break;
-     case '/':
-        if (match(s, strlen(source), '/'))
-        { while(peek(s, source) == '\n' && !isAtEnd2(s, source)) advance(s, source);
-        } else { addtoken(s, source, SLASH); }
-        break;
+        // consome o "."
+        advance();
 
-      case ' ':
-      case '\r':
-      case '\t':
-        // Ignore whitespace.
-        break;
+        while (isDigit(peek())) advance();
+    }
 
-      case '\n':
-        s->line++;
-        break;
+    return makeToken(TOKEN_NUMBER);
+}
 
-      case '"': string(s, source); break;
-      case 'o':
-        if (match(s, strlen(source), 'r')) {
-            addtoken(s, source, OR);
-        }
-        break;
-
-    default:
-        if (isDigit(c))
+// supports multi-line strings
+static Token string() {
+    while(peek() != '"' && !isAtEnd()) 
+    {
+        if (peek() == '"' && !isAtEnd())
         {
-            number(s, source);
-        } else if (isAlpha(c))
-        {
-            identifier();
-        } 
-        else {
-            printf("Unexpected character at line %d.\n", s->line);
+            if (peek() == '\n') scanner.line++;
+            advance();
         }
-        break;
+
+        if (isAtEnd()) return errorToken("Unterminated string.");
+
+        // closing quote
+
+        advance();
+        return makeToken(TOKEN_STRING);
     }
 }
 
-/*
-
-Acessa o caractere na posição atual do current e 
-em seguida incrementa o currence. Ele avança no fluxo de entrada (source)
-nextchar == advance
-*/
-char advance(Scanner *s, char *source)
+Token scanToken()
 {
-    return source[s->current++];
-}
+    scanner.start = scanner.current;
+    skipWhitespace();
+    if (isAtEnd()) return makeToken(TOKEN_EOF);
 
-// "Sobrescrita" do metodo addtokenwliteral
-void addtoken(Scanner *s, char *source, token_t type)
-{
-    addtokenwliteral(s, source, type, NULL);
+    char c = advance();
+    if (isAlpha(c)) return identifier();
+    if (isDigit(c)) return number();
+    switch (c) {
+        case '(': return makeToken(TOKEN_LEFT_PAREN);
+        case ')': return makeToken(TOKEN_RIGHT_PAREN);
+        case '{': return makeToken(TOKEN_LEFT_BRACE);
+        case '}': return makeToken(TOKEN_RIGHT_BRACE);
+        case ';': return makeToken(TOKEN_SEMICOLON);
+        case ',': return makeToken(TOKEN_COMMA);
+        case '.': return makeToken(TOKEN_DOT);
+        case '-': return makeToken(TOKEN_MINUS);
+        case '+': return makeToken(TOKEN_PLUS);
+        case '/': return makeToken(TOKEN_SLASH);
+        case '*': return makeToken(TOKEN_STAR);
+        case '!':
+            return makeToken(
+                match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+        case '=':
+            return makeToken(
+                match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+        case '<':
+            return makeToken(
+                match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+        case '>':
+            return makeToken(
+                match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+    case '"': return string();
+    }
+    return errorToken("Unexpected character.");
 }
-
-void addtokenwliteral(Scanner *s, char *source, token_t type, Object *literal)
-{
-    char *txt = substring(source, s->start, s->current);
-    Token *newtk = newtoken(type, txt, strlen(txt), literal, s->line);
-    stack = pushf(newtk, stack);
-    s->linkedtokens = stack;
-}
-
-int match(Scanner * s, int source_n, char expected) 
-{
-    if (s->current >= source_n) return FALSE;
-    if (s->current != expected) return FALSE;
-    s->current++;
-    return TRUE;
-}
-

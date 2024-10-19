@@ -1,29 +1,36 @@
-#pragma once
-#include "token.h"
+#ifndef cmarte_scanner_h
+#define cmarte_scanner_h
 
-#define SCANNER_START 0
-#define SCANNER_CURRENT = 0;
-#define SCANNER_LINE = 1
+typedef enum {
+  // Single-character tokens.
+  TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN,
+  TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,
+  TOKEN_COMMA, TOKEN_DOT, TOKEN_MINUS, TOKEN_PLUS,
+  TOKEN_SEMICOLON, TOKEN_SLASH, TOKEN_STAR,
+  // One or two character tokens.
+  TOKEN_BANG, TOKEN_BANG_EQUAL,
+  TOKEN_EQUAL, TOKEN_EQUAL_EQUAL,
+  TOKEN_GREATER, TOKEN_GREATER_EQUAL,
+  TOKEN_LESS, TOKEN_LESS_EQUAL,
+  // Literals.
+  TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_NUMBER,
+  // Keywords.
+  TOKEN_AND, TOKEN_CLASS, TOKEN_ELSE, TOKEN_FALSE,
+  TOKEN_FOR, TOKEN_FUN, TOKEN_IF, TOKEN_NIL, TOKEN_OR,
+  TOKEN_PRINT, TOKEN_RETURN, TOKEN_SUPER, TOKEN_THIS,
+  TOKEN_TRUE, TOKEN_VAR, TOKEN_WHILE,
 
-/*
-Talvez vtokens seja melhor listas encadeadas, pois não sabemos o quanto
-essa estrutura pode crescer;
-*/
+  TOKEN_ERROR, TOKEN_EOF
+} TokenType;
 
 typedef struct {
-    char * source;
-    struct token * linkedtokens;
-    int start;
-    int current;
+    TokenType type;
+    const char* start;
+    int length;
     int line;
-} Scanner;
+} Token;
 
-int isatend(int current, int source_n);
-Scanner * newscanner(char * source, int source_n);
-Token * scantokens(Scanner * s, int source_n, int tokens_n);
-//Token * allocvtokens(int tokens_n);
-void printtokensv(Token** vtoken, int tokens_n);
-char advance(Scanner *s, char *source);
-void addtoken(Scanner *s, char *source, token_t type);
-void addtokenwliteral(Scanner *s, char *source, token_t type, Object *literal);
-int match(Scanner * s, int source_n, char expected);
+void initScanner(const char* source);
+Token scanToken();
+
+#endif
