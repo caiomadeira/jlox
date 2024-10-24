@@ -1,0 +1,21 @@
+Você certamente já chamou funções variádicas — aquelas que aceitam um número variável de argumentos — em C antes: printf() é uma. Mas você pode não ter definido a sua própria. Este livro não é um tutorial de C, então vou dar uma olhada rápida aqui, mas basicamente as coisas de ... e va_list nos permitem passar um número arbitrário de argumentos para runtimeError(). Ele os encaminha para vfprintf(), que é o tipo de printf() que aceita um va_list explícito.
+
+Se você está procurando um tutorial de C, eu adoro The C Programming Language, geralmente chamado de “K&R” em homenagem aos seus autores. Não está totalmente atualizado, mas a qualidade da escrita mais do que compensa.
+
+Os chamadores podem passar uma string de formato para runtimeError() seguida por uma série de argumentos, assim como podem ao chamar printf() diretamente. runtimeError() então formata e imprime esses argumentos. Não tiraremos vantagem disso neste capítulo, mas capítulos posteriores produzirão mensagens de erro de tempo de execução formatadas que contêm outros dados.
+
+Depois de mostrarmos a mensagem de erro, que esperamos ser útil, informamos ao usuário qual linha do código estava sendo executada quando o erro ocorreu. Como deixamos os tokens para trás no compilador, procuramos a linha nas informações de depuração compiladas no bloco. Se nosso compilador fez seu trabalho corretamente, isso corresponde à linha do código-fonte da qual o bytecode foi compilado.
+
+Examinamos a matriz de linhas de depuração do bloco usando o índice de instrução do bytecode atual menos um. Isso ocorre porque o interpretador avança além de cada instrução antes de executá-la. Portanto, no ponto em que chamamos runtimeError(), a instrução com falha é a anterior.
+
+Apenas mostrar a linha imediata onde o erro ocorreu não fornece muito contexto. Melhor seria um rastreamento de pilha completo. Mas ainda não temos funções para chamar, então não há pilha de chamadas para rastrear.
+
+Para usar va_list e as macros para trabalhar com ele, precisamos trazer um cabeçalho padrão.
+vm.c
+adicionar ao topo do arquivo
+
+#include <stdarg.h>
+
+#include <stdio.h>
+
+Com isso, nossa VM não só pode fazer a coisa certa quando negamos números (como costumava fazer antes de quebrá-la), mas também lida graciosamente com tentativas errôneas de negar outros tipos (que ainda não temos, mas ainda assim).

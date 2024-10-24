@@ -1,10 +1,13 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 
 #include "common.h"
 #include "chunk.h"
 #include "debug.h"
 #include "vm.h"
+
+#define REPL_QUIT "q:\n"
 
 static void repl()
 {
@@ -14,6 +17,14 @@ static void repl()
 
         if (!fgets(line, sizeof(line), stdin)) {
             printf("\n");
+            break;
+        }
+
+        printf("REPL LINE: %s\n", line);
+
+        if (strcmp(line, REPL_QUIT) == 0) 
+        { 
+            printf("Exiting from REPL...\n");
             break;
         }
 
